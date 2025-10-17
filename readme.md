@@ -1,7 +1,7 @@
 # Generative AI Training
 
 ## Introduction
-[Presentation](https://www.canva.com/design/DAG1-Lf5yjo/uu0WidJb1UeuGBNm2Ou0cQ/edit?utm_content=DAG1-Lf5yjo&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+[Presentation](./docs/Generative%20AI%20Training.pdf)
 
 ## Set Enviorment 
 
