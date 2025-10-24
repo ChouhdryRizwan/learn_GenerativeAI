@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simple Gemini Chat</title>
+  </head>
+  <body>
+    <h2>Gemini Chat</h2>
+
+    <input id="userInput" type="text" placeholder="Type your message..." />
+    <button onclick="askGemini()">Send</button>
+
+    <p><strong>Response:</strong></p>
+    <div id="output"></div>
+
+    <script>
+      const API_KEY = "your_api_key_here"; // 🔹 Replace with your Gemini API key
+      const API_URL =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+        API_KEY;
+
+      async function askGemini() {
+        const text = document.getElementById("userInput").value;
+
+        const body = {
+          contents: [{ role: "user", parts: [{ text }] }],
+        };
+
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+        document.getElementById("output").innerText =
+          data.candidates[0].content.parts[0].text;
+      }
+    </script>
+  </body>
+</html>
