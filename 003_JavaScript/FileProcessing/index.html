@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gemini 2.5 Flash Summarizer - Karachi Pro</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white;
+      margin: 0;
+      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(12px);
+      border-radius: 25px;
+      padding: 40px;
+      width: 90%;
+      max-width: 850px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    h1 { font-size: 2.8rem; margin: 0 0 10px; }
+    p { font-size: 1.3rem; opacity: 0.9; }
+    .upload-area {
+      border: 4px dashed #00ff88;
+      border-radius: 20px;
+      padding: 50px;
+      margin: 30px 0;
+      cursor: pointer;
+      transition: all 0.4s;
+      background: rgba(0,255,136,0.1);
+    }
+    .upload-area:hover { background: rgba(0,255,136,0.25); transform: scale(1.02); }
+    .upload-area.dragover { background: rgba(0,255,255,0.4); border-color: cyan; }
+    input[type="file"] { display: none; }
+    button {
+      background: #ff0066;
+      color: white;
+      border: none;
+      padding: 18px 50px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      margin: 20px;
+      box-shadow: 0 10px 20px rgba(255,0,102,0.4);
+      transition: 0.3s;
+    }
+    button:hover { background: #ff3385; transform: translateY(-5px); }
+    button:disabled { background: #666; transform: none; }
+    #result {
+      margin-top: 30px;
+      text-align: left;
+      background: rgba(0,0,0,0.5);
+      padding: 25px;
+      border-radius: 15px;
+      min-height: 150px;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      border-left: 6px solid #00ff88;
+    }
+    .footer { margin-top: 30px; font-size: 0.9rem; opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gemini 2.5 Flash</h1>
+    <p>Upload PDF • Excel • Word • Image • Text → Instant Urdu + English Summary</p>
+
+    <div class="upload-area" id="dropArea">
+      <p>Click Here or Drag & Drop Your File<br>
+      <strong>PDF, DOCX, XLSX, PNG, JPG, TXT</strong></p>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.xls,.txt,.png,.jpg,.jpeg,.webp" />
+    </div>
+
+    <button id="summarizeBtn">Summarize with Gemini 2.5 Flash</button>
+
+    <div id="result">Summary will appear here...</div>
+    <div class="footer">Made with love in Karachi</div>
+  </div>
+
+  <script>
+    const API_KEY = "YOUR_KEY_HERE"; // ← PASTE YOUR KEY
+
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const summarizeBtn = document.getElementById('summarizeBtn');
+    const resultDiv = document.getElementById('result');
+
+    let selectedFile = null;
+
+    // Auto-enable button when file selected
+    const updateButton = () => {
+      summarizeBtn.disabled = !selectedFile;
+      summarizeBtn.textContent = selectedFile ? "Summarize Now!" : "Select a File First";
+    };
+
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+      dropArea.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+    });
+    ['dragenter', 'dragover'].forEach(e => {
+      dropArea.addEventListener(e, () => dropArea.classList.add('dragover'));
+    });
+    ['dragleave', 'drop'].forEach(e => {
+      dropArea.addEventListener(e, () => dropArea.classList.remove('dragover'));
+    });
+
+    dropArea.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      if (files.length) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+      selectedFile = file;
+      dropArea.innerHTML = `<strong>Ready:</strong> ${file.name}<br><small>${(file.size/1024/1024).toFixed(2)} MB</small>`;
+      updateButton();
+    }
+
+    summarizeBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      resultDiv.innerHTML = "Uploading to Gemini 2.5 Flash...";
+      summarizeBtn.disabled = true;
+
+      try {
+        // Upload file
+        const uploadRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${API_KEY}`, {
+          method: "POST",
+          body: selectedFile
+        });
+        if (!uploadRes.ok) throw new Error("Upload failed. Check internet or file size.");
+
+        const { file: { uri: fileUri, mimeType: detectedMime } } = await uploadRes.json();
+
+        const mimeType = detectedMime || selectedFile.type || 'application/octet-stream';
+
+        const prompt = `You are a professional analyst from Karachi. Summarize this file in clear Urdu + English bullet points. Include:
+        • Title & Author (if any)
+        • Main topics and sections
+        • Key numbers, tables, charts
+        • Important conclusions
+        • Action items (if any)
+        File: ${selectedFile.name}`;
+
+        const genRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ fileData: { fileUri, mimeType } }, { text: prompt }] }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 4096 }
+          })
+        });
+
+        const data = await genRes.json();
+        if (data.error) throw new Error(data.error.message);
+
+        const summary = data.candidates[0].content.parts[0].text;
+        resultDiv.innerHTML = summary.replace(/\n/g, '<br>');
+
+      } catch (err) {
+        resultDiv.innerHTML = `<span style="color:#ff6b6b">Error:</span> ${err.message}<br><br>
+        • Internet off hai?<br>
+        • File 2GB se zyada toh nahi?<br>
+        • API key expire ho gaya? (AI Studio mein nayi bana lo)`;
+      } finally {
+        summarizeBtn.disabled = false;
+        summarizeBtn.textContent = "Summarize Again";
+      }
+    });
+
+    // Auto greet
+    resultDiv.innerHTML = "As-salam-o-alaikum! File upload karo aur summary lo – Karachi style!";
+  </script>
+</body>
+</html>
