@@ -14,9 +14,9 @@
     <div id="output"></div>
 
     <script>
-      const API_KEY = "your_api_key_here"; // 🔹 Replace with your Gemini API key
+      const API_KEY = "AIzaSyDI2i1p0s3ifZDBT2FvVLC8d5LOL7jBrwI"; // 🔹 Replace with your Gemini API key
       const API_URL =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
         API_KEY;
 
       async function askGemini() {
@@ -24,6 +24,19 @@
 
         const body = {
           contents: [{ role: "user", parts: [{ text }] }],
+          // system_instruction: {
+          //   parts: [
+          //     {
+          //       text: "Act like a medical assistant, just reply to the queries related to the health issues, dont reply any other query just simple say i'm a medical assistant.",
+          //     },
+          //   ],
+          // },
+          generationConfig: {
+            temperature: 0.5,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+            responseMimeType: "text/plain",
+          },
         };
 
         const res = await fetch(API_URL, {
